@@ -1,0 +1,46 @@
+From 4b086d46407ccbc1ace6b25188d94c3345b00f14 Mon Sep 17 00:00:00 2001
+From: Ahmed Shariff <shariff.mfa@outlook.com>
+Date: Wed, 13 Nov 2019 16:12:11 -0600
+Subject: [PATCH] Fix for some stuff
+
+---
+ src/caffe/layer_factory.cpp                     | 2 +-
+ src/caffe/layers/mkldnn_inner_product_layer.cpp | 8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/src/caffe/layer_factory.cpp b/src/caffe/layer_factory.cpp
+index 0218d966..3b275fb4 100644
+--- a/src/caffe/layer_factory.cpp
++++ b/src/caffe/layer_factory.cpp
+@@ -116,7 +116,7 @@ shared_ptr<Layer<Dtype> > GetConvolutionLayer(
+     }
+ #endif
+ #ifdef MKLDNN_SUPPORTED
+-    else if (ep.isEngine("MKLDNN")) {
++    else if (ep.isEngine("MKLDNN") || use_dilation) {
+       engine = ConvolutionParameter_Engine_MKLDNN;
+     }
+ #endif
+diff --git a/src/caffe/layers/mkldnn_inner_product_layer.cpp b/src/caffe/layers/mkldnn_inner_product_layer.cpp
+index 9994df78..925b03de 100644
+--- a/src/caffe/layers/mkldnn_inner_product_layer.cpp
++++ b/src/caffe/layers/mkldnn_inner_product_layer.cpp
+@@ -351,11 +351,11 @@ void MKLDNNInnerProductLayer<Dtype>::InitInnerProductBwd(const vector<Blob<Dtype
+     // Initialize inner_product primitive descriptor
+     shared_ptr<inner_product_backward_data::desc> ipBwdData_desc;
+     shared_ptr<inner_product_backward_weights::desc> ipBwdWeights_desc;
+- if (this->bias_term_)
+-    ipBwdWeights_desc.reset(new inner_product_backward_weights::desc(init_bottom_md, init_weights_md
++    if (this->bias_term_)
++      ipBwdWeights_desc.reset(new inner_product_backward_weights::desc(init_bottom_md, init_weights_md
+                         , init_bias_md, init_top_md));
+- else
+-    ipBwdWeights_desc.reset(new inner_product_backward_weights::desc(init_bottom_md, init_weights_md
++    else
++      ipBwdWeights_desc.reset(new inner_product_backward_weights::desc(init_bottom_md, init_weights_md
+                         , init_top_md));
+ 
+     ipBwdData_desc.reset(new inner_product_backward_data::desc(init_bottom_md, init_weights_md, init_top_md));
+-- 
+2.20.1
+

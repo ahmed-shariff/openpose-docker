@@ -1,0 +1,74 @@
+From 8c34ba3040b46f342f5b1c8282ef2acac1ea7758 Mon Sep 17 00:00:00 2001
+From: Ahmed Shariff <shariff.mfa@outlook.com>
+Date: Wed, 13 Nov 2019 16:12:11 -0600
+Subject: [PATCH] Fix to build for cpu in ubuntu 18
+
+---
+ src/caffe/layer_factory.cpp                     | 2 +-
+ src/caffe/layers/mkldnn_inner_product_layer.cpp | 8 ++++----
+ src/caffe/serialization/ProtoSerialize.cpp      | 2 +-
+ src/caffe/util/io.cpp                           | 2 +-
+ 4 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/src/caffe/layer_factory.cpp b/src/caffe/layer_factory.cpp
+index 0218d966..3b275fb4 100644
+--- a/src/caffe/layer_factory.cpp
++++ b/src/caffe/layer_factory.cpp
+@@ -116,7 +116,7 @@ shared_ptr<Layer<Dtype> > GetConvolutionLayer(
+     }
+ #endif
+ #ifdef MKLDNN_SUPPORTED
+-    else if (ep.isEngine("MKLDNN")) {
++    else if (ep.isEngine("MKLDNN") || use_dilation) {
+       engine = ConvolutionParameter_Engine_MKLDNN;
+     }
+ #endif
+diff --git a/src/caffe/layers/mkldnn_inner_product_layer.cpp b/src/caffe/layers/mkldnn_inner_product_layer.cpp
+index 9994df78..925b03de 100644
+--- a/src/caffe/layers/mkldnn_inner_product_layer.cpp
++++ b/src/caffe/layers/mkldnn_inner_product_layer.cpp
+@@ -351,11 +351,11 @@ void MKLDNNInnerProductLayer<Dtype>::InitInnerProductBwd(const vector<Blob<Dtype
+     // Initialize inner_product primitive descriptor
+     shared_ptr<inner_product_backward_data::desc> ipBwdData_desc;
+     shared_ptr<inner_product_backward_weights::desc> ipBwdWeights_desc;
+- if (this->bias_term_)
+-    ipBwdWeights_desc.reset(new inner_product_backward_weights::desc(init_bottom_md, init_weights_md
++    if (this->bias_term_)
++      ipBwdWeights_desc.reset(new inner_product_backward_weights::desc(init_bottom_md, init_weights_md
+                         , init_bias_md, init_top_md));
+- else
+-    ipBwdWeights_desc.reset(new inner_product_backward_weights::desc(init_bottom_md, init_weights_md
++    else
++      ipBwdWeights_desc.reset(new inner_product_backward_weights::desc(init_bottom_md, init_weights_md
+                         , init_top_md));
+ 
+     ipBwdData_desc.reset(new inner_product_backward_data::desc(init_bottom_md, init_weights_md, init_top_md));
+diff --git a/src/caffe/serialization/ProtoSerialize.cpp b/src/caffe/serialization/ProtoSerialize.cpp
+index 9a30d907..5e36c691 100644
+--- a/src/caffe/serialization/ProtoSerialize.cpp
++++ b/src/caffe/serialization/ProtoSerialize.cpp
+@@ -50,7 +50,7 @@ bool deserialize(const char* data,
+   using google::protobuf::io::CodedInputStream;
+   ArrayInputStream zero_stream(data, size);
+   CodedInputStream coded_stream(&zero_stream);
+-  coded_stream.SetTotalBytesLimit(max_decode_size, max_decode_size);
++  coded_stream.SetTotalBytesLimit(max_decode_size); //, max_decode_size);
+   bool ret = msg->ParseFromCodedStream(&coded_stream);
+ //  CHECK(ret);
+   return ret;
+diff --git a/src/caffe/util/io.cpp b/src/caffe/util/io.cpp
+index ba70dc74..5e90706b 100644
+--- a/src/caffe/util/io.cpp
++++ b/src/caffe/util/io.cpp
+@@ -100,7 +100,7 @@ bool ReadProtoFromBinaryFile(const char* filename, Message* proto) {
+   CHECK_NE(fd, -1) << "File not found: " << filename;
+   ZeroCopyInputStream* raw_input = new FileInputStream(fd);
+   CodedInputStream* coded_input = new CodedInputStream(raw_input);
+-  coded_input->SetTotalBytesLimit(kProtoReadBytesLimit, 536870912);
++  coded_input->SetTotalBytesLimit(kProtoReadBytesLimit);//, 536870912);
+ 
+   bool success = proto->ParseFromCodedStream(coded_input);
+ 
+-- 
+2.20.1
+
